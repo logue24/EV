@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tính pin xe điện theo quãng đường</title>
+  <meta name="description" content="Chọn xe điện, nhập số km, xem pin tiêu thụ và pin còn lại. Hỗ trợ khứ hồi.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <h1>Tính pin xe điện</h1>
+      <p>Chọn xe, nhập số km, biết ngay pin còn lại sau chuyến đi.</p>
+    </header>
+
+    <!-- Chọn xe -->
+    <section class="card" aria-labelledby="h-car">
+      <h2 id="h-car">Xe của bạn</h2>
+
+      <div id="picker">
+        <div class="field">
+          <label for="brand">Hãng xe</label>
+          <select id="brand" disabled>
+            <option value="">Tất cả hãng</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="search">Tìm xe</label>
+          <input id="search" type="search" autocomplete="off" placeholder="Gõ hãng hoặc tên xe, ví dụ: VF 8" disabled>
+        </div>
+
+        <p class="status" id="data-status" role="status">Đang tải data.xlsx…</p>
+
+        <div id="load-fallback" class="fallback" hidden>
+          <p>Không đọc được <strong>data.xlsx</strong>. Mở trang bằng đường dẫn GitHub Pages (https://…) thay vì mở file trực tiếp, hoặc chọn file thủ công:</p>
+          <input id="file-input" type="file" accept=".xlsx,.xls" aria-label="Chọn file data.xlsx">
+        </div>
+
+        <ul class="results" id="results" hidden></ul>
+      </div>
+
+      <div id="picked" class="picked" hidden>
+        <div>
+          <p class="picked-name" id="picked-name"></p>
+          <p class="picked-source" id="picked-source"></p>
+        </div>
+        <button type="button" class="ghost" id="change-car">Đổi xe</button>
+      </div>
+    </section>
+
+    <!-- Chuyến đi -->
+    <section class="card" aria-labelledby="h-trip">
+      <h2 id="h-trip">Chuyến đi</h2>
+
+      <div class="row two">
+        <div class="field">
+          <label for="range">Km mỗi lần sạc đầy</label>
+          <div class="input-wrap">
+            <input id="range" type="number" inputmode="decimal" min="1" step="any" placeholder="VD: 450">
+            <span class="unit">km</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="capacity">Dung lượng pin (không bắt buộc)</label>
+          <div class="input-wrap">
+            <input id="capacity" type="number" inputmode="decimal" min="0" step="any" placeholder="VD: 60">
+            <span class="unit">kWh</span>
+          </div>
+        </div>
+      </div>
+      <p class="hint" id="range-hint" hidden>
+        <span id="range-hint-text"></span>
+        <button type="button" class="link" id="range-reset">Khôi phục</button>
+      </p>
+
+      <div class="field">
+        <label for="distance">Quãng đường</label>
+        <div class="input-wrap">
+          <input id="distance" type="number" inputmode="decimal" min="0" step="any" placeholder="VD: 120">
+          <span class="unit">km</span>
+        </div>
+      </div>
+
+      <label class="switch-row" for="round-trip">
+        <span class="switch-text">
+          <span class="switch-title">Khứ hồi</span>
+          <span class="switch-note" id="round-note">Tắt: chỉ tính một chiều</span>
+        </span>
+        <input type="checkbox" id="round-trip" role="switch">
+      </label>
+
+      <div class="field battery-field">
+        <div class="battery-head">
+          <label for="battery-slider">Pin hiện tại</label>
+          <div class="input-wrap small">
+            <input id="battery-number" type="number" inputmode="decimal" min="0" max="100" step="any" value="100" aria-label="Pin hiện tại, phần trăm">
+            <span class="unit">%</span>
+          </div>
+        </div>
+        <input id="battery-slider" type="range" min="0" max="100" step="1" value="100">
+      </div>
+    </section>
+
+    <!-- Kết quả -->
+    <section class="card result" aria-labelledby="h-result">
+      <h2 id="h-result">Kết quả</h2>
+
+      <div class="pair">
+        <div class="metric used">
+          <p class="label"><span class="key key-used" aria-hidden="true"></span>Pin tiêu thụ</p>
+          <p class="big" id="res-used">–</p>
+          <p class="sub" id="res-used-kwh"></p>
+        </div>
+        <div class="metric left">
+          <p class="label"><span class="key key-left" aria-hidden="true"></span>Pin còn lại</p>
+          <p class="big" id="res-left">–</p>
+          <p class="sub" id="res-left-kwh"></p>
+        </div>
+      </div>
+
+      <div class="battery" id="battery-visual" role="img" aria-label="Biểu đồ pin">
+        <div class="shell">
+          <div class="track">
+            <div class="seg seg-left" id="bar-left"></div>
+            <div class="seg seg-used" id="bar-used"></div>
+            <span class="tick" style="left:25%"></span>
+            <span class="tick" style="left:50%"></span>
+            <span class="tick" style="left:75%"></span>
+          </div>
+        </div>
+      </div>
+
+      <p class="msg" id="res-msg" role="status" aria-live="polite">Chọn xe hoặc nhập km mỗi lần sạc để bắt đầu tính.</p>
+
+      <dl class="facts">
+        <div>
+          <dt>Tổng quãng đường</dt>
+          <dd id="res-total">–</dd>
+          <dd class="sub" id="res-total-note"></dd>
+        </div>
+        <div>
+          <dt>Đi tối đa với pin hiện tại</dt>
+          <dd id="res-max">–</dd>
+        </div>
+      </dl>
+    </section>
+
+    <footer class="foot">
+      <p>Km mỗi lần sạc là số hãng công bố. Thực tế thấp hơn khi chạy nhanh, trời nóng hoặc lạnh, chở nặng. Dữ liệu xe lấy từ <strong>data.xlsx</strong>, sửa file này để thêm xe.</p>
+    </footer>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
