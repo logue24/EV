@@ -33,6 +33,9 @@
 
 * { box-sizing: border-box; }
 
+/* Thuộc tính hidden luôn thắng các rule display khác (ví dụ .fallback { display: grid }) */
+[hidden] { display: none !important; }
+
 html { -webkit-text-size-adjust: 100%; }
 
 body {
